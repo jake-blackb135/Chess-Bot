@@ -1,0 +1,15 @@
+{
+  "type": "module",
+  "name": "chess_bot",
+  "version": "1.0.0",
+  "main": "script.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "chess.js": "^0.13.4"
+  },
+  "description": ""
+}
