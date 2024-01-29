@@ -24,12 +24,13 @@ var evaluate = function (board) {
   
   return evaluation;
 }
+var quiessence = function(alpha,beta){
 
+}
 
 function generateMoves(game, depth,maximizingPlayer,alpha,beta) {
   
   if (depth <= 0) {
-    
     return evaluate(game.board());
   }
 
@@ -46,12 +47,11 @@ function generateMoves(game, depth,maximizingPlayer,alpha,beta) {
     
     if (game.in_checkmate()){
       game.undo();
-      bestMove = move;
-      return { move: bestMove, value: Number.POSITIVE_INFINITY };
+      return bestMove = move;
     }
     
     const childValue = generateMoves(game, depth - 1,!maximizingPlayer, alpha, beta);
-    console.log(childValue)
+    
     
     if (maximizingPlayer) {
       if (childValue > bestValue) {
@@ -68,15 +68,16 @@ function generateMoves(game, depth,maximizingPlayer,alpha,beta) {
     }
    
     game.undo();
-    if (alpha > beta){
-      break;
+    
+    if (alpha >= beta){
+      
+      return bestMove;
     }
     
   }
   
   
-  if (depth === 3) {
-    console.log("BEST VALUE: " + bestValue + " BEST MOVE: " + bestMove);
+  if (depth === 4) {
     return bestMove; // Return the best move at the root level
   } else {
     return bestValue; // Return the best value for the current player at other levels
@@ -87,7 +88,7 @@ function generateMoves(game, depth,maximizingPlayer,alpha,beta) {
 
 var bestMove = function (game) {
   
-  var bestMove = generateMoves(game,3,false, Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY);
+  var bestMove = generateMoves(game,4,false, Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY);
   return bestMove;
 
 
@@ -194,22 +195,24 @@ var getPieceValue = function (piece,x,y) {
   if (piece === null) {
     return 0;
   }
-  
+  // + game.moves({square: piece.square}).length
   var getAbsoluteValue = function (piece) {
-    if (piece.type === 'p') {
-      return 10 + PAWN[x][y];
-    } else if (piece.type === 'r') {
-      return 50 + ROOK[x][y] + game.moves({square: piece.square}).length;
-    } else if (piece.type === 'n') {
-      return 30 + KNIGHT[x][y];
-    } else if (piece.type === 'b') {
-      return 30 + BISHOP[x][y] + game.moves({square: piece.square}).length;
-    } else if (piece.type === 'q') {
-      return 90 + QUEEN[x][y] + game.moves({square: piece.square}).length;
-    } else if (piece.type === 'k') {
-      return 900 + KING[x][y];
+    switch (piece.type) {
+      case 'p':
+        return 10 + PAWN[x][y];
+      case 'r':
+        return 50 + ROOK[x][y];
+      case 'n':
+        return 30 + KNIGHT[x][y];
+      case 'b':
+        return 30 + BISHOP[x][y];
+      case 'q':
+        return 90 + QUEEN[x][y];
+      case 'k':
+        return 900 + KING[x][y];
+      default:
+        throw "Unknown piece type: " + piece.type;
     }
-    throw "Unknown piece type: " + piece.type;
   };
 
   var absoluteValue = getAbsoluteValue(piece, piece.color === 'w');
