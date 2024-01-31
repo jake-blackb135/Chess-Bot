@@ -1,7 +1,7 @@
 import { Chess } from './board/js/chess.js/chess.js';
 
 var game = new Chess;
-
+//game.load('r3k2r/pppp2pp/8/8/8/8/PPP3PP/5K1R w kq - 0 1');
 var board = Chessboard('#board', {
   draggable: true,
   position: 'start',
@@ -12,6 +12,7 @@ var board = Chessboard('#board', {
   onSnapEnd: onSnapEnd
 });
 
+//evaluates the current position this is used when determining the best move for the bot
 var evaluate = function (board) {
   var evaluation = 0;
   
@@ -28,21 +29,28 @@ var quiessence = function(alpha,beta){
 
 }
 
+/*
+  The Minimax algorithm employed here explores potential moves within a game by recursively analyzing each option and considering the optimal response from the opponent. 
+  This process continues until a specified depth is reached, providing a strategy for determining the best move in a given position.
+*/
 function generateMoves(game, depth,maximizingPlayer,alpha,beta) {
   
   if (depth <= 0) {
     return evaluate(game.board());
   }
 
-  const legalMoves = game.moves();
+  const legalMoves = orderMoves(game.moves());
+  
   if (legalMoves.length === 0) {
     return { move: null, value: 0 };
   }
   let bestValue = maximizingPlayer ? Number.NEGATIVE_INFINITY : Number.POSITIVE_INFINITY;
   let bestMove = null;
+  
 
 
   for (const move of legalMoves) {
+    
     game.move(move);
     
     if (game.in_checkmate()){
@@ -78,6 +86,7 @@ function generateMoves(game, depth,maximizingPlayer,alpha,beta) {
   
   
   if (depth === 4) {
+    
     return bestMove; // Return the best move at the root level
   } else {
     return bestValue; // Return the best value for the current player at other levels
@@ -85,33 +94,27 @@ function generateMoves(game, depth,maximizingPlayer,alpha,beta) {
   
 }
 
-
-var bestMove = function (game) {
-  
-  var bestMove = generateMoves(game,4,false, Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY);
-  return bestMove;
-
-
-}
-var getGameMove = function (game) {
-
-  return bestMove(game);
-}
-
+//gets the best move for the AI and plays it 
 var makeMove = function () {
-  var move = getGameMove(game);
+
+  /*
+    calls the generate moves method which determines the best move for black. 
+    Currently depth 4 is recommended until further optimization to allow it to search faster
+  */
+  var move = generateMoves(game,4,false, Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY);;
   game.move(move);
   setTimeout(function () {
     board.position(game.fen());
     if (game.in_checkmate()){
       alert("Black Wins!"); 
     }
-  }, 1000);
+  }, 500);
   
 
 
 }
 
+//code for making squares gray to highlight a piece can move there
 var greySquare = function (square) {
   var squareEl = $('#board .square-' + square);
 
@@ -138,12 +141,16 @@ var greySquare = function (square) {
   squareEl.css('background', background);
 };
 
+//restricts the user from moving pieces if the game is over
 function onDragStart(source, piece, position, orientation) {
   if (game.in_checkmate() === true || game.in_draw() === true) {
     return false;
   }
 }
 
+/*
+  When the user makes a valid move this method sees if the game has ended and if not the AI makes a move.
+*/
 function onDrop(source, target) {
   var move = game.move({ from: source, to: target, promotion: 'q' });
   if (move == null) {
@@ -151,17 +158,12 @@ function onDrop(source, target) {
   }
   console.log(move);
   game.move(move);
-  if (game.in_checkmate()) {
-    alert("You won! Good job!");
-  } else if (game.in_threefold_repetition()){
-    alert("Draw by three fold repitition");
-  } else if(game.in_stalemate()){
-    alert("Draw by stalemate");
-  } else if(game.insufficient_material()){
-    alert("Draw by insufficient material");
-  }
-
-  makeMove();
+  checkGameStatus();
+  setTimeout(()=>{
+    makeMove();
+  },500);
+  
+  checkGameStatus();
 }
 
 function onMouseoverSquare(square, piece) {
@@ -190,6 +192,10 @@ function onSnapEnd() {
 
 }
 
+/*
+  This method evaluates a single piece on the board.
+  It will add the initial value of the piece to a value that cooresponds with its position on the board
+*/
 var getPieceValue = function (piece,x,y) {
 
   if (piece === null) {
@@ -223,7 +229,11 @@ var getPieceValue = function (piece,x,y) {
 
 
 
-
+/*
+  2D arrays that coorespond to the squares on the chess board. There is one for every kind of peice.
+  The value of the square will be added when evaluating the position.
+  This encourages the bot to put pieces on more active squares when no capture is available
+*/
 const KING = [
   [-3, -4, -4, -5, -5, -4, -4, -3],
   [-3, -4, -4, -5, -5, -4, -4, -3],
@@ -232,7 +242,7 @@ const KING = [
   [-2, -3, -3, -4, -4, -3, -3, -2],
   [-0, -2, -2, -2, -2, -2, -2, -1],
   [2, 2, 0, 0, 0, 0, 2, 2],
-  [2, 3, 1, 0, 0, 1, 3, 2]];
+  [50, 50, 1, -1, -1, 1, 50, 50]];
 const QUEEN = [
   [-2, -1, -1, -.5, -.5, -1, -1, -2],
   [-1, 0, 0, 0, 0, 0, 0, -1],
@@ -250,7 +260,7 @@ const ROOK = [
   [5, 5, 5, 5, 5, 5, 5, 5],
   [5, 5, 5, 5, 5, 5, 5, 5],
   [5, 5, 5, 5, 5, 5, 5, 5],
-  [5, 5, 5, 5.1, 5.1, 5.5, 5, 5]
+  [5, 5, 10, 12, 12, 10, 5, 5]
 ];
 const BISHOP = [
   [-2, -1, -1, -1, -1, -1, -1, -2],
@@ -282,5 +292,45 @@ const PAWN = [
   [0, 0, 0, 0, 0, 0, 0, 0]];
 
 const PSQT_SET = [KING, QUEEN, ROOK, BISHOP, KNIGHT, PAWN];
+
+
+/*
+  function to check if the game has ended and alerts the user
+*/
+function checkGameStatus(){
+  if (game.in_checkmate()) {
+    alert("You won! Good job!");
+  } else if (game.in_threefold_repetition()){
+    alert("Draw by three fold repitition");
+  } else if(game.in_stalemate()){
+    alert("Draw by stalemate");
+  } else if(game.insufficient_material()){
+    alert("Draw by insufficient material");
+  }
+}
+
+/* 
+  function to order the list of current moves. 
+  This is used in combination with alpha beta pruning to signicantly speed up the search algorithm and allow for greater depth searching.
+*/
+function orderMoves(moves) {
+  const orderedMoves = [];
+
+  // Evaluate each move and store them with their evaluation scores
+  for (const move of moves) {
+    game.move(move);
+    const evaluation = evaluate(game.board());
+    orderedMoves.push({ move, evaluation });
+    game.undo();
+  }
+
+  // Sort moves based on the evaluation scores in descending order
+  orderedMoves.sort((a, b) => (game.turn() === 'w' ? b.evaluation - a.evaluation : a.evaluation - b.evaluation));
+
+  // Extract and return the sorted moves
+  return orderedMoves.map((moveObj) => moveObj.move);
+}
+
+
 
 
